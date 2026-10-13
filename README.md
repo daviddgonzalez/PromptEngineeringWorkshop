@@ -2,7 +2,8 @@
 
 Players see a target frontend and write a prompt for an AI to recreate it. This MVP
 is the scoring core: paste a target HTML page and an attempt, get a 0–100 visual
-similarity score and a heatmap of where they differ.
+similarity score and a heatmap of where they differ. Either side can be HTML or an
+uploaded image (PNG, JPEG, WebP or GIF, up to 5MB); images are scaled to 1280px wide.
 
 ## Run
 
