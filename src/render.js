@@ -14,8 +14,7 @@ function browser() {
   return browserPromise;
 }
 
-/** Full-page PNG of `html` at 1280px wide, at most 4000px tall; rejects after 10s. */
-export async function render(html) {
+async function withPage(fill) {
   const context = await (await browser()).newContext({ viewport: VIEWPORT });
   let timedOut = false;
   // Closing the context is the only way to unstick a page whose main thread is busy-looping.
@@ -25,7 +24,7 @@ export async function render(html) {
   }, RENDER_TIMEOUT_MS);
   try {
     const page = await context.newPage();
-    await page.setContent(html, { waitUntil: 'load', timeout: 0 });
+    await fill(page);
     const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
     return await page.screenshot({
       fullPage: true,
@@ -38,6 +37,24 @@ export async function render(html) {
     clearTimeout(deadline);
     await context.close();
   }
+}
+
+/** Full-page PNG of `html` at 1280px wide, at most 4000px tall; rejects after 10s. */
+export function render(html) {
+  return withPage((page) => page.setContent(html, { waitUntil: 'load', timeout: 0 }));
+}
+
+/** PNG of an image data URL scaled to 1280px wide, framed like `render`. */
+export function renderImage(dataUrl) {
+  return withPage(async (page) => {
+    await page.setContent(`<body style="margin:0"><img style="display:block;width:${VIEWPORT.width}px"></body>`);
+    const decoded = await page.evaluate(async (src) => {
+      const img = document.querySelector('img');
+      img.src = src;
+      return img.decode().then(() => true, () => false);
+    }, dataUrl);
+    if (!decoded) throw new Error('could not decode image');
+  });
 }
 
 export async function close() {

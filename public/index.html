@@ -8,7 +8,12 @@
     body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #f8fafc; color: #0f172a; }
     h1 { margin: 0 0 16px; font-size: 22px; }
     .inputs, .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    .side-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .side-head > label { font-weight: 600; }
+    .mode label { margin-left: 12px; cursor: pointer; }
+    .drop { height: 240px; box-sizing: border-box; border: 2px dashed #94a3b8; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px; background: white; }
+    .drop.over { border-color: #2563eb; background: #eff6ff; }
+    .drop img { max-width: 100%; max-height: 170px; object-fit: contain; }
     textarea { width: 100%; height: 240px; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 13px; padding: 8px; }
     button { margin: 16px 0; padding: 10px 20px; font-size: 16px; cursor: pointer; }
     #result { font-size: 40px; font-weight: 700; }
@@ -24,18 +29,40 @@
   <h1>Frontend Match</h1>
   <div class="inputs">
     <div>
-      <label for="target">Target HTML</label>
+      <div class="side-head">
+        <label for="target">Target</label>
+        <span class="mode">
+          <label><input type="radio" name="target-mode" value="html" checked> HTML</label>
+          <label><input type="radio" name="target-mode" value="image"> Image</label>
+        </span>
+      </div>
       <textarea id="target"><body style="margin:0;font-family:sans-serif">
   <header style="background:#1e293b;color:white;padding:20px">Acme</header>
   <main style="padding:40px"><h1>Welcome</h1><button style="background:#3b82f6;color:white;border:0;padding:12px 24px">Get started</button></main>
 </body></textarea>
+      <div class="drop" id="target-drop" hidden>
+        <img id="target-preview" alt="" hidden>
+        <input type="file" id="target-file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <span>or drop an image here</span>
+      </div>
     </div>
     <div>
-      <label for="attempt">Your HTML</label>
+      <div class="side-head">
+        <label for="attempt">Yours</label>
+        <span class="mode">
+          <label><input type="radio" name="attempt-mode" value="html" checked> HTML</label>
+          <label><input type="radio" name="attempt-mode" value="image"> Image</label>
+        </span>
+      </div>
       <textarea id="attempt"><body style="margin:0;font-family:sans-serif">
   <header style="background:#334155;color:white;padding:16px">Acme</header>
   <main style="padding:40px"><h1>Welcome</h1><button style="background:#f97316;color:white;border:0;padding:12px 24px">Get started</button></main>
 </body></textarea>
+      <div class="drop" id="attempt-drop" hidden>
+        <img id="attempt-preview" alt="" hidden>
+        <input type="file" id="attempt-file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <span>or drop an image here</span>
+      </div>
     </div>
   </div>
   <button id="score-btn">Score</button>
@@ -48,6 +75,48 @@
   </div>
   <script>
     const $ = (id) => document.getElementById(id);
+    const MAX_BYTES = 5 * 1024 * 1024;
+    const images = { target: null, attempt: null };
+    const mode = (key) => document.querySelector(`input[name="${key}-mode"]:checked`).value;
+
+    function loadImage(key, file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      if (file.size > MAX_BYTES) {
+        alert('Images must be 5MB or smaller.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        images[key] = reader.result;
+        $(`${key}-preview`).src = reader.result;
+        $(`${key}-preview`).hidden = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    for (const key of ['target', 'attempt']) {
+      for (const radio of document.querySelectorAll(`input[name="${key}-mode"]`)) {
+        radio.addEventListener('change', () => {
+          $(key).hidden = mode(key) !== 'html';
+          $(`${key}-drop`).hidden = mode(key) !== 'image';
+        });
+      }
+      $(`${key}-file`).addEventListener('change', (e) => loadImage(key, e.target.files[0]));
+      const drop = $(`${key}-drop`);
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+      drop.addEventListener('drop', (e) => {
+        e.preventDefault();
+        drop.classList.remove('over');
+        loadImage(key, e.dataTransfer.files[0]);
+      });
+    }
+
+    function side(key) {
+      if (mode(key) === 'html') return { [`${key}Html`]: $(key).value };
+      if (!images[key]) throw new Error(`Choose an image for ${key === 'target' ? 'the target' : 'your page'}.`);
+      return { [`${key}Image`]: images[key] };
+    }
 
     $('score-btn').addEventListener('click', async () => {
       const button = $('score-btn');
@@ -59,7 +128,7 @@
         const res = await fetch('/api/score', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ targetHtml: $('target').value, attemptHtml: $('attempt').value }),
+          body: JSON.stringify({ ...side('target'), ...side('attempt') }),
         });
         const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
         if (!res.ok) throw new Error(body.error);
