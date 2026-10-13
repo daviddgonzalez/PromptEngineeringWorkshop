@@ -1,0 +1,25 @@
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { PNG } from 'pngjs';
+import { render, close } from '../src/render.js';
+import { score } from '../src/score.js';
+
+after(close);
+
+const size = (png) => {
+  const { width, height } = PNG.sync.read(png);
+  return [width, height];
+};
+
+test('a short page fills the 1280x800 viewport', async () => {
+  assert.deepEqual(size(await render('<h1>Hi</h1>')), [1280, 800]);
+});
+
+test('tall pages are capped at 4000px', async () => {
+  assert.deepEqual(size(await render('<div style="height:10000px"></div>')), [1280, 4000]);
+});
+
+test('the same HTML rendered twice scores 100', async () => {
+  const html = '<body style="margin:0"><header style="background:#1e293b;height:80px"></header><button style="margin:40px">Go</button></body>';
+  assert.equal(score(await render(html), await render(html)).score, 100);
+});
