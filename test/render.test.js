@@ -23,3 +23,8 @@ test('the same HTML rendered twice scores 100', async () => {
   const html = '<body style="margin:0"><header style="background:#1e293b;height:80px"></header><button style="margin:40px">Go</button></body>';
   assert.equal(score(await render(html), await render(html)).score, 100);
 });
+
+test('a page that hangs after load rejects instead of hanging', async () => {
+  const html = "<script>addEventListener('load', () => setTimeout(() => { while (true); }, 0))</script>";
+  await assert.rejects(render(html), /timed out/);
+});
