@@ -41,7 +41,11 @@ async function withPage(fill) {
 
 /** Full-page PNG of `html` at 1280px wide, at most 4000px tall; rejects after 10s. */
 export function render(html) {
-  return withPage((page) => page.setContent(html, { waitUntil: 'load', timeout: 0 }));
+  return withPage(async (page) => {
+    await page.setContent(html, { waitUntil: 'load', timeout: 0 });
+    // Pages compiled from TSX mark themselves pending until React and Tailwind have settled.
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-pending'), null, { timeout: 0 });
+  });
 }
 
 /** PNG of an image data URL scaled to 1280px wide, framed like `render`. */

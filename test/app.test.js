@@ -74,6 +74,51 @@ test('an undecodable image is a 422', async () => {
   assert.equal(res.status, 422);
 });
 
+test('the same TSX on both sides scores 100', async () => {
+  const tsx = 'export default function App() { return <h1 className="text-4xl text-rose-600 p-10">Hi</h1>; }';
+  const res = await post({ targetTsx: tsx, attemptTsx: tsx });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).score, 100);
+});
+
+test('TSX that does not compile is a 422 when scoring', async () => {
+  const res = await post({ targetHtml: '<p>x</p>', attemptTsx: 'export default () => <p>' });
+  assert.equal(res.status, 422);
+  assert.match((await res.json()).error, /Could not compile TSX/);
+});
+
+test('/api/preview compiles TSX or explains why not', async () => {
+  const preview = (tsx) =>
+    fetch(`${baseUrl}/api/preview`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tsx }),
+    });
+  const ok = await preview('export default () => <p className="text-xl">Hi</p>;');
+  assert.equal(ok.status, 200);
+  assert.match((await ok.json()).html, /^<!doctype html>/);
+  const bad = await preview('export default () => <p>');
+  assert.equal(bad.status, 422);
+  assert.equal(typeof (await bad.json()).error, 'string');
+  assert.equal((await preview('')).status, 400);
+});
+
+test('/api/targets lists the built-in tests by track and category', async () => {
+  const tracks = await (await fetch(`${baseUrl}/api/targets`)).json();
+  assert.deepEqual(tracks.map((t) => t.track), ['HTML', 'React']);
+  const expectedType = { HTML: 'html', React: 'tsx' };
+  for (const { track, categories } of tracks) {
+    assert.deepEqual(categories.map((c) => c.category), ['Components', 'Styling']);
+    for (const { tests } of categories) {
+      assert.deepEqual(tests.map((t) => t.name), ['Test 1', 'Test 2', 'Test 3']);
+      for (const t of tests) {
+        assert.equal(t.type, expectedType[track]);
+        assert.equal((await fetch(`${baseUrl}/${t.file}`)).status, 200);
+      }
+    }
+  }
+});
+
 test('an oversized body gets a JSON error', async () => {
   const res = await post({ targetHtml: 'a'.repeat(17 * 1024 * 1024), attemptHtml: '<p>x</p>' });
   assert.equal(res.status, 413);

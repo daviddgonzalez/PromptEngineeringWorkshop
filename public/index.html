@@ -8,18 +8,30 @@
     body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #f8fafc; color: #0f172a; }
     h1 { margin: 0 0 16px; font-size: 22px; }
     .inputs, .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-    .side-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .side-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; min-height: 30px; }
     .side-head > label { font-weight: 600; }
     .mode label { margin-left: 12px; cursor: pointer; }
-    .drop { height: 240px; box-sizing: border-box; border: 2px dashed #94a3b8; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px; background: white; }
-    .drop.over { border-color: #2563eb; background: #eff6ff; }
-    .drop img { max-width: 100%; max-height: 170px; object-fit: contain; }
-    textarea { width: 100%; height: 240px; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 13px; padding: 8px; }
+    select { font-size: 14px; padding: 4px 6px; }
+    .track { margin-bottom: 16px; }
+    .track label:first-of-type { margin-left: 8px; }
+    .controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; color: #475569; }
+    .target-tools { display: flex; align-items: center; gap: 12px; }
+    .show-code { font-size: 14px; cursor: pointer; white-space: nowrap; }
+    .code-view { margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #0f172a; color: #e2e8f0; overflow: hidden; }
+    .code-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #1e293b; font-size: 13px; color: #94a3b8; }
+    .code-bar button { margin: 0; padding: 4px 12px; font-size: 13px; }
+    .code-view pre { margin: 0; padding: 12px; max-height: 320px; overflow: auto; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.5; }
+    .preview { height: 320px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: white; position: relative; }
+    .preview.over { border: 2px dashed #2563eb; }
+    .preview iframe { width: 1280px; border: 0; transform-origin: 0 0; display: block; }
+    .preview .message { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; text-align: center; color: #64748b; background: white; white-space: pre-wrap; }
+    .preview .message.error { color: #b91c1c; font-family: ui-monospace, monospace; font-size: 13px; }
+    textarea { width: 100%; height: 200px; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 13px; padding: 8px; margin-bottom: 8px; }
     button { margin: 16px 0; padding: 10px 20px; font-size: 16px; cursor: pointer; }
     #result { font-size: 40px; font-weight: 700; }
     #result.error { font-size: 16px; color: #b91c1c; }
     #details { color: #475569; margin-bottom: 16px; }
-    [hidden] { display: none; }
+    [hidden] { display: none !important; }
     figure { margin: 0; }
     figure img { width: 100%; border: 1px solid #cbd5e1; background: white; }
     figcaption { font-weight: 600; margin-bottom: 4px; }
@@ -27,42 +39,47 @@
 </head>
 <body>
   <h1>Frontend Match</h1>
+  <div class="track mode" id="tracks"><b>Track:</b></div>
   <div class="inputs">
     <div>
       <div class="side-head">
-        <label for="target">Target</label>
-        <span class="mode">
-          <label><input type="radio" name="target-mode" value="html" checked> HTML</label>
-          <label><input type="radio" name="target-mode" value="image"> Image</label>
+        <label for="target-select">Target</label>
+        <span class="target-tools">
+          <label class="show-code"><input type="checkbox" id="target-show-code"> Show code</label>
+          <select id="target-select"></select>
         </span>
       </div>
-      <textarea id="target"><body style="margin:0;font-family:sans-serif">
-  <header style="background:#1e293b;color:white;padding:20px">Acme</header>
-  <main style="padding:40px"><h1>Welcome</h1><button style="background:#3b82f6;color:white;border:0;padding:12px 24px">Get started</button></main>
-</body></textarea>
-      <div class="drop" id="target-drop" hidden>
-        <img id="target-preview" alt="" hidden>
-        <input type="file" id="target-file" accept="image/png,image/jpeg,image/webp,image/gif">
-        <span>or drop an image here</span>
+      <div class="controls" id="target-upload" hidden>
+        <input type="file" id="target-file" accept=".html,.htm,.tsx,image/png,image/jpeg,image/webp,image/gif">
+        <span>or drop an .html, .tsx or image file on the preview</span>
+      </div>
+      <div class="preview" id="target-preview"></div>
+      <div class="code-view" id="target-code" hidden>
+        <div class="code-bar"><span id="target-code-name"></span><button type="button" id="target-copy">Copy</button></div>
+        <pre><code id="target-code-text"></code></pre>
       </div>
     </div>
     <div>
       <div class="side-head">
         <label for="attempt">Yours</label>
         <span class="mode">
-          <label><input type="radio" name="attempt-mode" value="html" checked> HTML</label>
+          <label><input type="radio" name="attempt-mode" value="html"> HTML</label>
+          <label><input type="radio" name="attempt-mode" value="tsx" checked> React TSX</label>
           <label><input type="radio" name="attempt-mode" value="image"> Image</label>
         </span>
       </div>
-      <textarea id="attempt"><body style="margin:0;font-family:sans-serif">
-  <header style="background:#334155;color:white;padding:16px">Acme</header>
-  <main style="padding:40px"><h1>Welcome</h1><button style="background:#f97316;color:white;border:0;padding:12px 24px">Get started</button></main>
-</body></textarea>
-      <div class="drop" id="attempt-drop" hidden>
-        <img id="attempt-preview" alt="" hidden>
-        <input type="file" id="attempt-file" accept="image/png,image/jpeg,image/webp,image/gif">
-        <span>or drop an image here</span>
+      <div id="attempt-code">
+        <textarea id="attempt" spellcheck="false"></textarea>
+        <div class="controls">
+          <label for="attempt-code-file">Load a file:</label>
+          <input type="file" id="attempt-code-file">
+        </div>
       </div>
+      <div class="controls" id="attempt-upload" hidden>
+        <input type="file" id="attempt-file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <span>or drop an image on the preview</span>
+      </div>
+      <div class="preview" id="attempt-preview"></div>
     </div>
   </div>
   <button id="score-btn">Score</button>
@@ -76,46 +93,320 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const MAX_BYTES = 5 * 1024 * 1024;
-    const images = { target: null, attempt: null };
-    const mode = (key) => document.querySelector(`input[name="${key}-mode"]:checked`).value;
+    // The scorer renders at 1280px wide, so previews do too, scaled to fit their box.
+    const RENDER_WIDTH = 1280;
+    const UPLOAD = '__upload__';
 
-    function loadImage(key, file) {
-      if (!file || !file.type.startsWith('image/')) return;
-      if (file.size > MAX_BYTES) {
-        alert('Images must be 5MB or smaller.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        images[key] = reader.result;
-        $(`${key}-preview`).src = reader.result;
-        $(`${key}-preview`).hidden = false;
+    function makePreview(box) {
+      const iframe = document.createElement('iframe');
+      iframe.sandbox = 'allow-scripts';
+      iframe.title = 'Preview';
+      const message = document.createElement('div');
+      message.className = 'message';
+      box.append(iframe, message);
+
+      new ResizeObserver(() => {
+        const scale = box.clientWidth / RENDER_WIDTH;
+        if (!scale) return;
+        iframe.style.transform = `scale(${scale})`;
+        iframe.style.height = `${box.clientHeight / scale}px`;
+      }).observe(box);
+
+      let request = 0;
+      const preview = {
+        showHtml(html) {
+          request++;
+          iframe.srcdoc = html;
+          message.hidden = true;
+        },
+        showImage(dataUrl) {
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          img.style.cssText = `display:block;width:${RENDER_WIDTH}px`;
+          preview.showHtml(`<body style="margin:0">${img.outerHTML}</body>`);
+        },
+        showMessage(text, isError = false) {
+          request++;
+          message.textContent = text;
+          message.className = isError ? 'message error' : 'message';
+          message.hidden = false;
+        },
+        async showTsx(tsx) {
+          const id = ++request;
+          const res = await fetch('/api/preview', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ tsx }),
+          }).catch((err) => ({ ok: false, json: async () => ({ error: err.message }) }));
+          const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          if (id !== request) return; // a newer preview has been requested since
+          if (res.ok) preview.showHtml(body.html);
+          else preview.showMessage(body.error, true);
+        },
+        show(source) {
+          if (source.html) preview.showHtml(source.html);
+          else if (source.tsx) preview.showTsx(source.tsx);
+          else preview.showImage(source.image);
+        },
       };
-      reader.readAsDataURL(file);
+      return preview;
     }
 
-    for (const key of ['target', 'attempt']) {
-      for (const radio of document.querySelectorAll(`input[name="${key}-mode"]`)) {
-        radio.addEventListener('change', () => {
-          $(key).hidden = mode(key) !== 'html';
-          $(`${key}-drop`).hidden = mode(key) !== 'image';
-        });
-      }
-      $(`${key}-file`).addEventListener('change', (e) => loadImage(key, e.target.files[0]));
-      const drop = $(`${key}-drop`);
-      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
-      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-      drop.addEventListener('drop', (e) => {
+    const readAs = (file, method) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader[method](file);
+    });
+
+    /** Turns an uploaded or fetched file into { html }, { tsx } or { image }. */
+    async function readSource(file) {
+      if (file.size > MAX_BYTES) throw new Error('Files must be 5MB or smaller.');
+      if (file.type.startsWith('image/')) return { image: await readAs(file, 'readAsDataURL') };
+      if (/\.html?$/i.test(file.name)) return { html: await readAs(file, 'readAsText') };
+      if (/\.[jt]sx?$/i.test(file.name)) return { tsx: await readAs(file, 'readAsText') };
+      throw new Error('Use an .html, .tsx, PNG, JPEG, WebP or GIF file.');
+    }
+
+    function onDrop(box, handle) {
+      box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('over'); });
+      box.addEventListener('dragleave', () => box.classList.remove('over'));
+      box.addEventListener('drop', (e) => {
         e.preventDefault();
-        drop.classList.remove('over');
-        loadImage(key, e.dataTransfer.files[0]);
+        box.classList.remove('over');
+        if (e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]);
       });
     }
 
-    function side(key) {
-      if (mode(key) === 'html') return { [`${key}Html`]: $(key).value };
-      if (!images[key]) throw new Error(`Choose an image for ${key === 'target' ? 'the target' : 'your page'}.`);
-      return { [`${key}Image`]: images[key] };
+    // ---- Target: a built-in test or an uploaded file, rendered, with its code a click away ----
+    const targetPreview = makePreview($('target-preview'));
+    let target = null;
+    let targetName = '';
+
+    function showTargetCode() {
+      const code = target?.html ?? target?.tsx;
+      $('target-show-code').disabled = code === undefined;
+      $('target-show-code').parentElement.title = code === undefined ? 'Images have no code to show' : '';
+      $('target-code').hidden = !$('target-show-code').checked || code === undefined;
+      $('target-code-name').textContent = targetName;
+      $('target-code-text').textContent = code ?? '';
+    }
+
+    $('target-show-code').addEventListener('change', showTargetCode);
+    $('target-copy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText($('target-code-text').textContent);
+        $('target-copy').textContent = 'Copied';
+      } catch {
+        $('target-copy').textContent = 'Copy failed';
+      }
+      setTimeout(() => { $('target-copy').textContent = 'Copy'; }, 1500);
+    });
+
+    function setTarget(source, name = '') {
+      target = source;
+      targetName = name;
+      showTargetCode();
+      // A score belongs to the target it was made against.
+      $('result').className = '';
+      $('result').textContent = '';
+      $('details').textContent = '';
+      $('images').hidden = true;
+      if (source) targetPreview.show(source);
+    }
+
+    async function uploadTarget(file) {
+      if ($('target-select').value !== UPLOAD) {
+        $('target-select').value = UPLOAD;
+        $('target-upload').hidden = false;
+      }
+      try {
+        setTarget(await readSource(file), file.name);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function loadTest(test) {
+      targetPreview.showMessage('Loading…');
+      try {
+        const res = await fetch(test.file);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        setTarget(await readSource(new File([blob], test.file, { type: test.type === 'image' ? blob.type : '' })), decodeURIComponent(test.file.replace(/^targets\//, '')));
+      } catch (err) {
+        setTarget(null);
+        targetPreview.showMessage(`Could not load ${test.name}: ${err.message}`, true);
+      }
+    }
+
+    const tests = new Map();
+    $('target-select').addEventListener('change', () => {
+      const value = $('target-select').value;
+      $('target-upload').hidden = value !== UPLOAD;
+      if (value === UPLOAD) {
+        setTarget(null);
+        targetPreview.showMessage('Choose or drop an .html, .tsx or image file to practise with.');
+      } else {
+        loadTest(tests.get(value));
+      }
+    });
+    $('target-file').addEventListener('change', (e) => e.target.files[0] && uploadTarget(e.target.files[0]));
+    onDrop($('target-preview'), uploadTarget);
+
+    // ---- Tracks: each has its own tests, and sets which language Yours starts in ----
+    const TRACK_KEY = 'frontend-match-track';
+    let tracks = [];
+    const currentTrack = () => document.querySelector('input[name="track"]:checked')?.value;
+
+    function showTrack(name) {
+      const select = $('target-select');
+      select.replaceChildren();
+      tests.clear();
+      for (const { category, tests: list } of tracks.find((t) => t.track === name)?.categories ?? []) {
+        const group = document.createElement('optgroup');
+        group.label = category;
+        for (const test of list) {
+          tests.set(test.file, test);
+          group.append(new Option(test.name, test.file));
+        }
+        select.append(group);
+      }
+      select.append(new Option('Upload your own…', UPLOAD));
+      select.dispatchEvent(new Event('change'));
+      setAttemptMode(name === 'HTML' ? 'html' : 'tsx');
+    }
+
+    (async () => {
+      let loadError = null;
+      try {
+        const res = await fetch('/api/targets');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        tracks = await res.json();
+      } catch (err) {
+        loadError = err; // uploading still works
+      }
+      let saved = null;
+      try { saved = localStorage.getItem(TRACK_KEY); } catch {}
+      const initial = tracks.find((t) => t.track === saved)?.track ?? tracks.find((t) => t.track === 'React')?.track ?? tracks[0]?.track;
+      for (const { track } of tracks) {
+        const label = document.createElement('label');
+        const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'track', value: track, checked: track === initial });
+        radio.addEventListener('change', () => {
+          try { localStorage.setItem(TRACK_KEY, track); } catch {}
+          showTrack(track);
+        });
+        label.append(radio, ` ${track}`);
+        $('tracks').append(label);
+      }
+      $('tracks').hidden = tracks.length === 0;
+      showTrack(currentTrack());
+      if (loadError) {
+        targetPreview.showMessage(`Could not load the built-in tests (${loadError.message}). If you just updated the app, restart the server. You can still upload your own target.`, true);
+      }
+    })();
+
+    // ---- Yours: HTML or React + Tailwind TSX with a live preview, or an image ----
+    const attemptPreview = makePreview($('attempt-preview'));
+    const attemptMode = () => document.querySelector('input[name="attempt-mode"]:checked').value;
+    // Each code mode keeps its own draft, so switching modes or tracks loses nothing.
+    const drafts = { html: '', tsx: '' };
+    const CODE_MODES = {
+      html: {
+        accept: '.html,.htm',
+        placeholder: 'Paste the HTML your prompt generated, e.g.\n\n<h1 style="font: bold 36px sans-serif; padding: 40px">Hello</h1>',
+        empty: 'Your page will appear here.',
+      },
+      tsx: {
+        accept: '.tsx,.jsx,.ts,.js',
+        placeholder: 'Paste the React + Tailwind component your prompt generated, e.g.\n\nexport default function App() {\n  return <h1 className="text-4xl font-bold p-10">Hello</h1>;\n}',
+        empty: 'Your component will appear here.',
+      },
+    };
+    let codeMode = attemptMode();
+    let attemptImage = null;
+    let previewTimer;
+
+    function refreshAttempt() {
+      const mode = attemptMode();
+      const code = $('attempt').value;
+      if (mode === 'image') {
+        if (attemptImage) attemptPreview.showImage(attemptImage);
+        else attemptPreview.showMessage('Choose or drop an image.');
+      } else if (!code.trim()) {
+        attemptPreview.showMessage(CODE_MODES[mode].empty);
+      } else if (mode === 'html') {
+        attemptPreview.showHtml(code);
+      } else {
+        attemptPreview.showTsx(code);
+      }
+    }
+
+    function applyAttemptMode() {
+      const mode = attemptMode();
+      if (mode !== 'image' && mode !== codeMode) {
+        drafts[codeMode] = $('attempt').value;
+        $('attempt').value = drafts[mode];
+        codeMode = mode;
+      }
+      if (mode !== 'image') {
+        $('attempt').placeholder = CODE_MODES[mode].placeholder;
+        $('attempt-code-file').accept = CODE_MODES[mode].accept;
+      }
+      $('attempt-code').hidden = mode === 'image';
+      $('attempt-upload').hidden = mode !== 'image';
+      clearTimeout(previewTimer);
+      refreshAttempt();
+    }
+
+    function setAttemptMode(mode) {
+      document.querySelector(`input[name="attempt-mode"][value="${mode}"]`).checked = true;
+      applyAttemptMode();
+    }
+
+    $('attempt').addEventListener('input', () => {
+      clearTimeout(previewTimer);
+      // HTML previews locally and instantly; TSX needs a compile on the server.
+      previewTimer = setTimeout(refreshAttempt, attemptMode() === 'html' ? 150 : 500);
+    });
+    $('attempt-code-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > MAX_BYTES) return alert('Files must be 5MB or smaller.');
+      $('attempt').value = await readAs(file, 'readAsText');
+      e.target.value = '';
+      refreshAttempt();
+    });
+    for (const radio of document.querySelectorAll('input[name="attempt-mode"]')) {
+      radio.addEventListener('change', applyAttemptMode);
+    }
+
+    async function uploadAttemptImage(file) {
+      if (attemptMode() !== 'image') return;
+      if (!file.type.startsWith('image/')) return alert('Choose a PNG, JPEG, WebP or GIF image.');
+      if (file.size > MAX_BYTES) return alert('Images must be 5MB or smaller.');
+      attemptImage = await readAs(file, 'readAsDataURL');
+      refreshAttempt();
+    }
+    $('attempt-file').addEventListener('change', (e) => e.target.files[0] && uploadAttemptImage(e.target.files[0]));
+    onDrop($('attempt-preview'), uploadAttemptImage);
+    applyAttemptMode();
+
+    // ---- Scoring ----
+    function payload() {
+      if (!target) throw new Error('Pick a test or upload a target first.');
+      const body = target.html ? { targetHtml: target.html } : target.tsx ? { targetTsx: target.tsx } : { targetImage: target.image };
+      if (attemptMode() === 'image') {
+        if (!attemptImage) throw new Error('Choose an image for your page.');
+        return { ...body, attemptImage };
+      }
+      const code = $('attempt').value;
+      if (attemptMode() === 'html') {
+        if (!code.trim()) throw new Error('Paste your HTML first.');
+        return { ...body, attemptHtml: code };
+      }
+      if (!code.trim()) throw new Error('Paste your React component first.');
+      return { ...body, attemptTsx: code };
     }
 
     $('score-btn').addEventListener('click', async () => {
@@ -128,7 +419,7 @@
         const res = await fetch('/api/score', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ ...side('target'), ...side('attempt') }),
+          body: JSON.stringify(payload()),
         });
         const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
         if (!res.ok) throw new Error(body.error);

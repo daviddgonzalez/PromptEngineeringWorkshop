@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f1f5f9; color: #0f172a; padding: 64px 96px; }
+  h1 { text-align: center; font-size: 36px; margin: 0 0 8px; }
+  .sub { text-align: center; color: #64748b; margin: 0 0 48px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; }
+  .card.featured { border: 2px solid #2563eb; }
+  .tier { font-weight: 600; color: #475569; }
+  .price { font-size: 40px; font-weight: 800; margin: 12px 0 4px; }
+  .price small { font-size: 16px; color: #64748b; font-weight: 500; }
+  ul { list-style: none; padding: 0; margin: 24px 0; color: #334155; line-height: 2; }
+  li::before { content: "✓ "; color: #16a34a; font-weight: 700; }
+  .btn { text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; border: 1px solid #cbd5e1; }
+  .featured .btn { background: #2563eb; color: white; border-color: #2563eb; }
+</style>
+</head>
+<body>
+  <h1>Simple pricing</h1>
+  <p class="sub">Pick the plan that fits your team.</p>
+  <div class="grid">
+    <div class="card"><div class="tier">Starter</div><div class="price">$0 <small>/month</small></div>
+      <ul><li>1 project</li><li>Community support</li><li>1GB storage</li></ul><div class="btn">Get started</div></div>
+    <div class="card featured"><div class="tier">Pro</div><div class="price">$19 <small>/month</small></div>
+      <ul><li>Unlimited projects</li><li>Email support</li><li>50GB storage</li></ul><div class="btn">Start trial</div></div>
+    <div class="card"><div class="tier">Team</div><div class="price">$49 <small>/month</small></div>
+      <ul><li>Everything in Pro</li><li>SSO</li><li>500GB storage</li></ul><div class="btn">Contact sales</div></div>
+  </div>
+</body>
+</html>
